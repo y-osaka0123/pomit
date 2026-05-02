@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomit — Pomodoro × Commit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0d0f12;
+      --surface:   #161a20;
+      --border:    #252a33;
+      --accent:    #e8ff57;
+      --accent2:   #57ffe8;
+      --text:      #e4e8ef;
+      --muted:     #5a6070;
+      --danger:    #ff5f57;
+      --success:   #57ff8a;
+      --radius:    6px;
+      --mono:      'Space Mono', monospace;
+      --sans:      'Noto Sans JP', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── ノイズテクスチャ背景 ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ── ヘッダー ── */
+    .header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .logo {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.04em;
+    }
+    .logo span { color: var(--accent2); }
+    .tagline {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── カード ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .card-title {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ── フォーム要素 ── */
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+
+    /* ── ボタン ── */
+    .btn {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.75rem 1.2rem;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent);
+      color: #0d0f12;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+    }
+    .btn-secondary:hover:not(:disabled) { background: rgba(87,255,232,0.07); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(255,95,87,0.07); }
+
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── ステータスバッジ ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+    .badge.ok    { color: var(--success); border-color: var(--success); background: rgba(87,255,138,0.06); }
+    .badge.err   { color: var(--danger);  border-color: var(--danger);  background: rgba(255,95,87,0.06); }
+    .badge.info  { color: var(--accent2); border-color: var(--accent2); background: rgba(87,255,232,0.06); }
+    .badge.warn  { color: var(--accent);  border-color: var(--accent);  background: rgba(232,255,87,0.06); }
+    .badge::before { content: '●'; font-size: 0.5rem; }
+
+    /* ── ログ出力 ── */
+    .log {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.7;
+      color: var(--muted);
+      min-height: 80px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .log .line { display: block; }
+    .log .line.ok  { color: var(--success); }
+    .log .line.err { color: var(--danger); }
+    .log .line.info{ color: var(--accent2); }
+    .log .line.acc { color: var(--accent); }
+
+    /* ── auth status strip ── */
+    .auth-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── スクロールバー ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── フェードイン ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeUp 0.35s ease both; }
+    .card:nth-child(2) { animation-delay: 0.08s; }
+    .card:nth-child(3) { animation-delay: 0.16s; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="logo">Po<span>mit</span></div>
+    <div class="tagline">Pomodoro × Commit</div>
+  </div>
+
+  <!-- ① 認証カード -->
+  <div class="card" id="card-auth">
+    <div class="card-title">// 01 — GitHub 認証</div>
+
+    <label>
+      Personal Access Token (repo スコープ必須)
+      <input type="password" id="input-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+    </label>
+    <label>
+      GitHub ユーザー名（Owner）
+      <input type="text" id="input-owner" placeholder="y-osaka0123" />
+    </label>
+    <label>
+      リポジトリ名
+      <input type="text" id="input-repo" placeholder="Pomit" />
+    </label>
+
+    <div class="auth-strip">
+      <div id="auth-badge" class="badge warn">未認証</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-verify">接続確認</button>
+        <button class="btn btn-primary"   id="btn-save">保存</button>
+        <button class="btn btn-danger"    id="btn-clear">クリア</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 疎通テストカード -->
+  <div class="card" id="card-test">
+    <div class="card-title">// 02 — commit / push テスト</div>
+    <label>
+      コミットメッセージ
+      <input type="text" id="input-msg" placeholder="test: Pomit疎通確認" />
+    </label>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-commit" disabled>テストコミット実行</button>
+    </div>
+    <div class="log" id="log">接続確認後にコミットテストが実行できます...</div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
