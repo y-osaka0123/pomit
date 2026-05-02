@@ -133,9 +133,9 @@ function addLog(el, text, type = '') {
 
 function clearLog(el) { el.innerHTML = ''; }
 
-function setAuthBadge(state, text) {
+function setAuthBadge(badgeState, text) {
   [authBadge, authBadgeHeader].forEach(el => {
-    el.className = `badge ${state}`;
+    el.className = `badge ${badgeState}`;
     el.textContent = text;
   });
 }
@@ -558,14 +558,6 @@ function renderHistory() {
 ══════════════════════════════════════════════════ */
 loadSaved();
 checkNotifPermission();
-
-// 保存済みで認証済みなら開始画面へ直行
-const hasSaved = localStorage.getItem(STORE.token) &&
-  localStorage.getItem(STORE.owner) &&
-  localStorage.getItem(STORE.repo);
-if (hasSaved) {
-  showView('start');
-}
 
 // タイマー初期表示
 ringTime.textContent = fmtSeconds(getWorkSec());
