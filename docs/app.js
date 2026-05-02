@@ -40,6 +40,30 @@ const state = {
 ══════════════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
 
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function storageRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore storage errors so UI actions still work.
+  }
+}
 // header
 const authBadgeHeader = $('auth-badge-header');
 const btnGotoSettings = $('btn-goto-settings');
@@ -99,10 +123,10 @@ const commitHistory = $('commit-history');
 ══════════════════════════════════════════════════ */
 function getCredentials() {
   return {
-    token: inputToken.value.trim() || localStorage.getItem(STORE.token) || '',
-    owner: inputOwner.value.trim() || localStorage.getItem(STORE.owner) || '',
-    repo: inputRepo.value.trim() || localStorage.getItem(STORE.repo) || '',
-    filepath: inputFilepath.value.trim() || localStorage.getItem(STORE.filepath) || 'pomit-logs/progress.md',
+    token: inputToken.value.trim() || storageGet(STORE.token) || '',
+    owner: inputOwner.value.trim() || storageGet(STORE.owner) || '',
+    repo: inputRepo.value.trim() || storageGet(STORE.repo) || '',
+    filepath: inputFilepath.value.trim() || storageGet(STORE.filepath) || 'pomit-logs/progress.md',
   };
 }
 
@@ -163,7 +187,7 @@ btnNotifEnable.addEventListener('click', async () => {
 });
 
 function sendNotif(title, body) {
-  if (Notification.permission === 'granted') {
+  if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body, icon: '' });
   }
 }
@@ -247,12 +271,12 @@ async function commitProgress(progressText, sessionNum) {
    SETTINGS VIEW
 ══════════════════════════════════════════════════ */
 function loadSaved() {
-  const t = localStorage.getItem(STORE.token);
-  const o = localStorage.getItem(STORE.owner);
-  const r = localStorage.getItem(STORE.repo);
-  const f = localStorage.getItem(STORE.filepath);
-  const w = localStorage.getItem(STORE.workMin);
-  const b = localStorage.getItem(STORE.breakMin);
+  const t = storageGet(STORE.token);
+  const o = storageGet(STORE.owner);
+  const r = storageGet(STORE.repo);
+  const f = storageGet(STORE.filepath);
+  const w = storageGet(STORE.workMin);
+  const b = storageGet(STORE.breakMin);
   if (t) inputToken.value = t;
   if (o) inputOwner.value = o;
   if (r) inputRepo.value = r;
@@ -272,18 +296,18 @@ btnSave.addEventListener('click', () => {
     addLog(authLog, '⚠ トークン・Owner・リポジトリを入力してください', 'err');
     return;
   }
-  localStorage.setItem(STORE.token, t);
-  localStorage.setItem(STORE.owner, o);
-  localStorage.setItem(STORE.repo, r);
-  localStorage.setItem(STORE.filepath, inputFilepath.value.trim() || 'pomit-logs/progress.md');
-  localStorage.setItem(STORE.workMin, inputWorkMin.value);
-  localStorage.setItem(STORE.breakMin, inputBreakMin.value);
+  storageSet(STORE.token, t);
+  storageSet(STORE.owner, o);
+  storageSet(STORE.repo, r);
+  storageSet(STORE.filepath, inputFilepath.value.trim() || 'pomit-logs/progress.md');
+  storageSet(STORE.workMin, inputWorkMin.value);
+  storageSet(STORE.breakMin, inputBreakMin.value);
   addLog(authLog, '認証情報を保存しました', 'acc');
   setAuthBadge('warn', '保存済み（未検証）');
 });
 
 btnClear.addEventListener('click', () => {
-  Object.values(STORE).forEach(k => localStorage.removeItem(k));
+  Object.values(STORE).forEach(k => storageRemove(k));
   inputToken.value = inputOwner.value = inputRepo.value = '';
   inputFilepath.value = '';
   setAuthBadge('warn', '未認証');
@@ -321,9 +345,9 @@ btnVerify.addEventListener('click', async () => {
 
 btnSettingsDone.addEventListener('click', () => {
   // タイマー設定を保存
-  localStorage.setItem(STORE.workMin, inputWorkMin.value);
-  localStorage.setItem(STORE.breakMin, inputBreakMin.value);
-  localStorage.setItem(STORE.filepath, inputFilepath.value.trim() || 'pomit-logs/progress.md');
+  storageSet(STORE.workMin, inputWorkMin.value);
+  storageSet(STORE.breakMin, inputBreakMin.value);
+  storageSet(STORE.filepath, inputFilepath.value.trim() || 'pomit-logs/progress.md');
   showView('start');
 });
 
@@ -352,8 +376,14 @@ btnStartPomodoro.addEventListener('click', () => {
 /* ══════════════════════════════════════════════════
    TIMER
 ══════════════════════════════════════════════════ */
-function getWorkSec() { return parseInt(inputWorkMin.value || localStorage.getItem(STORE.workMin) || 25) * 60; }
-function getBreakSec() { return parseInt(inputBreakMin.value || localStorage.getItem(STORE.breakMin) || 5) * 60; }
+function getWorkSec() {
+  const min = parseInt(inputWorkMin.value || storageGet(STORE.workMin) || 25, 10);
+  return Math.max(1, Number.isFinite(min) ? min : 25) * 60;
+}
+function getBreakSec() {
+  const min = parseInt(inputBreakMin.value || storageGet(STORE.breakMin) || 5, 10);
+  return Math.max(1, Number.isFinite(min) ? min : 5) * 60;
+}
 
 function initTimer(mode) {
   stopTimer();
