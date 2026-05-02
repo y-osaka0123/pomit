@@ -5,270 +5,456 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pomit — Pomodoro × Commit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:        #0d0f12;
-      --surface:   #161a20;
-      --border:    #252a33;
-      --accent:    #e8ff57;
-      --accent2:   #57ffe8;
-      --text:      #e4e8ef;
-      --muted:     #5a6070;
-      --danger:    #ff5f57;
-      --success:   #57ff8a;
-      --radius:    6px;
-      --mono:      'Space Mono', monospace;
-      --sans:      'Noto Sans JP', sans-serif;
+      --bg:       #0d0f12;
+      --surface:  #161a20;
+      --surface2: #1c2028;
+      --border:   #252a33;
+      --border2:  #2f3540;
+      --accent:   #e8ff57;
+      --accent2:  #57ffe8;
+      --text:     #e4e8ef;
+      --muted:    #5a6070;
+      --danger:   #ff5f57;
+      --success:  #57ff8a;
+      --radius:   6px;
+      --mono:     'Space Mono', monospace;
+      --sans:     'Noto Sans JP', sans-serif;
+      --ring-work:  #e8ff57;
+      --ring-break: #57ffe8;
+      --ring-size:  200px;
+      --ring-stroke: 6;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
+      background: var(--bg); color: var(--text); font-family: var(--sans);
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 2rem 1rem 4rem;
     }
-
-    /* ── ノイズテクスチャ背景 ── */
     body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
     }
-
     .wrap {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 560px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+      position: relative; z-index: 1;
+      width: 100%; max-width: 600px;
+      display: flex; flex-direction: column; gap: 1.25rem;
     }
 
-    /* ── ヘッダー ── */
+    /* ── header ── */
     .header {
-      display: flex;
-      align-items: baseline;
-      gap: 0.75rem;
+      display: flex; align-items: center;
+      justify-content: space-between; padding: 0.5rem 0;
     }
     .logo {
-      font-family: var(--mono);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: -0.04em;
+      font-family: var(--mono); font-size: 1.6rem; font-weight: 700;
+      color: var(--accent); letter-spacing: -0.04em;
     }
     .logo span { color: var(--accent2); }
-    .tagline {
-      font-size: 0.75rem;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    .header-right { display: flex; align-items: center; gap: 0.75rem; }
 
-    /* ── カード ── */
+    /* ── views ── */
+    .view { display: none; flex-direction: column; gap: 1.25rem; }
+    .view.active { display: flex; }
+
+    /* ── card ── */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      display: flex; flex-direction: column; gap: 1.2rem;
+      animation: fadeUp 0.3s ease both;
     }
+    .card:nth-child(2) { animation-delay: 0.07s; }
+    .card:nth-child(3) { animation-delay: 0.14s; }
     .card-title {
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      color: var(--muted);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase;
     }
 
-    /* ── フォーム要素 ── */
+    /* ── forms ── */
     label {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      letter-spacing: 0.04em;
+      display: flex; flex-direction: column; gap: 0.4rem;
+      font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em;
     }
-    input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      padding: 0.65rem 0.9rem;
-      outline: none;
-      transition: border-color 0.15s;
-      width: 100%;
+    input, textarea {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: var(--sans); font-size: 0.9rem;
+      padding: 0.65rem 0.9rem; outline: none;
+      transition: border-color 0.15s; width: 100%;
     }
-    input:focus { border-color: var(--accent); }
-    input::placeholder { color: var(--muted); }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
 
-    /* ── ボタン ── */
+    /* ── buttons ── */
     .btn {
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      border: none;
-      border-radius: var(--radius);
-      padding: 0.75rem 1.2rem;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 0.06em; border: none; border-radius: var(--radius);
+      padding: 0.7rem 1.2rem; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s; white-space: nowrap;
     }
     .btn:active { transform: scale(0.97); }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-primary {
-      background: var(--accent);
-      color: #0d0f12;
-    }
-    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .btn-primary  { background: var(--accent);  color: #0d0f12; }
+    .btn-primary:hover:not(:disabled)  { opacity: 0.85; }
+    .btn-cyan     { background: var(--accent2); color: #0d0f12; }
+    .btn-cyan:hover:not(:disabled)     { opacity: 0.85; }
     .btn-secondary {
-      background: transparent;
-      color: var(--accent2);
+      background: transparent; color: var(--accent2);
       border: 1px solid var(--accent2);
     }
     .btn-secondary:hover:not(:disabled) { background: rgba(87,255,232,0.07); }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--border2); color: var(--text); }
     .btn-danger {
-      background: transparent;
-      color: var(--danger);
+      background: transparent; color: var(--danger);
       border: 1px solid var(--danger);
     }
     .btn-danger:hover:not(:disabled) { background: rgba(255,95,87,0.07); }
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+    .btn-full { width: 100%; justify-content: center; text-align: center; display: block; }
 
-    .btn-row {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    /* ── ステータスバッジ ── */
+    /* ── badge ── */
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      padding: 0.3rem 0.7rem;
-      border-radius: 999px;
-      border: 1px solid;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: var(--mono); font-size: 0.68rem;
+      padding: 0.25rem 0.65rem; border-radius: 999px; border: 1px solid;
     }
-    .badge.ok    { color: var(--success); border-color: var(--success); background: rgba(87,255,138,0.06); }
-    .badge.err   { color: var(--danger);  border-color: var(--danger);  background: rgba(255,95,87,0.06); }
-    .badge.info  { color: var(--accent2); border-color: var(--accent2); background: rgba(87,255,232,0.06); }
-    .badge.warn  { color: var(--accent);  border-color: var(--accent);  background: rgba(232,255,87,0.06); }
-    .badge::before { content: '●'; font-size: 0.5rem; }
+    .badge::before { content: '●'; font-size: 0.45rem; }
+    .badge.ok   { color: var(--success); border-color: var(--success); background: rgba(87,255,138,0.06); }
+    .badge.err  { color: var(--danger);  border-color: var(--danger);  background: rgba(255,95,87,0.06); }
+    .badge.info { color: var(--accent2); border-color: var(--accent2); background: rgba(87,255,232,0.06); }
+    .badge.warn { color: var(--accent);  border-color: var(--accent);  background: rgba(232,255,87,0.06); }
 
-    /* ── ログ出力 ── */
+    /* ── log ── */
     .log {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem;
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      line-height: 1.7;
-      color: var(--muted);
-      min-height: 80px;
-      max-height: 220px;
-      overflow-y: auto;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.9rem 1rem;
+      font-family: var(--mono); font-size: 0.72rem; line-height: 1.8;
+      color: var(--muted); min-height: 64px; max-height: 180px; overflow-y: auto;
     }
     .log .line { display: block; }
-    .log .line.ok  { color: var(--success); }
-    .log .line.err { color: var(--danger); }
-    .log .line.info{ color: var(--accent2); }
-    .log .line.acc { color: var(--accent); }
+    .log .line.ok   { color: var(--success); }
+    .log .line.err  { color: var(--danger); }
+    .log .line.info { color: var(--accent2); }
+    .log .line.acc  { color: var(--accent); }
 
-    /* ── auth status strip ── */
+    /* ── auth strip ── */
     .auth-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;
     }
 
-    /* ── スクロールバー ── */
+    /* ── notification bar ── */
+    .notif-bar {
+      display: none; background: rgba(232,255,87,0.05);
+      border: 1px solid rgba(232,255,87,0.2); border-radius: var(--radius);
+      padding: 0.65rem 1rem; font-size: 0.78rem; color: var(--accent);
+      align-items: center; justify-content: space-between;
+      gap: 0.75rem; flex-wrap: wrap;
+    }
+    .notif-bar.show { display: flex; }
+
+    /* ══ TIMER SPECIFIC ══ */
+
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+    }
+    .stat-cell {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.75rem; text-align: center;
+    }
+    .stat-val {
+      font-family: var(--mono); font-size: 1.4rem; font-weight: 700;
+      color: var(--accent); line-height: 1;
+    }
+    .stat-val.cyan { color: var(--accent2); }
+    .stat-label {
+      font-family: var(--mono); font-size: 0.6rem;
+      color: var(--muted); letter-spacing: 0.1em;
+      text-transform: uppercase; margin-top: 0.25rem;
+    }
+
+    .session-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .session-label {
+      font-family: var(--mono); font-size: 0.65rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    }
+    .session-count { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
+
+    .timer-ring-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 1.2rem; padding: 0.5rem 0;
+    }
+    .ring-container {
+      position: relative; width: var(--ring-size); height: var(--ring-size);
+    }
+    .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--border2); stroke-width: var(--ring-stroke); }
+    .ring-progress {
+      fill: none; stroke: var(--ring-work);
+      stroke-width: var(--ring-stroke); stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+    .ring-progress.break { stroke: var(--ring-break); }
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.1rem;
+    }
+    .ring-time {
+      font-family: var(--mono); font-size: 2.6rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.04em; line-height: 1;
+    }
+    .ring-mode {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    }
+    .ring-mode.work  { color: var(--accent); }
+    .ring-mode.break { color: var(--accent2); }
+
+    .timer-controls { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+    .btn-timer-main { font-size: 0.85rem; padding: 0.8rem 2.2rem; }
+
+    .task-strip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.75rem 1rem;
+      font-size: 0.82rem; color: var(--text); line-height: 1.5;
+    }
+    .task-strip-label {
+      font-family: var(--mono); font-size: 0.62rem;
+      color: var(--muted); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 0.3rem;
+    }
+
+    .commit-log { display: flex; flex-direction: column; gap: 0.5rem; }
+    .commit-item {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 0.78rem;
+      animation: fadeUp 0.25s ease both;
+    }
+    .commit-sha {
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--accent2); white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem;
+    }
+    .commit-msg { color: var(--text); line-height: 1.5; flex: 1; }
+    .commit-ts {
+      font-family: var(--mono); font-size: 0.6rem;
+      color: var(--muted); white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem;
+    }
+
+    /* ── animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseRing {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.55; }
+    }
+    .ring-time.pulse { animation: pulseRing 1.2s ease infinite; }
+
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* ── フェードイン ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .card { animation: fadeUp 0.35s ease both; }
-    .card:nth-child(2) { animation-delay: 0.08s; }
-    .card:nth-child(3) { animation-delay: 0.16s; }
   </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- ヘッダー -->
+  <!-- ═══ HEADER ═══ -->
   <div class="header">
     <div class="logo">Po<span>mit</span></div>
-    <div class="tagline">Pomodoro × Commit</div>
+    <div class="header-right">
+      <div id="auth-badge-header" class="badge warn">未認証</div>
+      <button class="btn btn-ghost" id="btn-goto-settings"
+        style="padding:0.4rem 0.8rem;font-size:0.7rem;">⚙ 設定</button>
+    </div>
   </div>
 
-  <!-- ① 認証カード -->
-  <div class="card" id="card-auth">
-    <div class="card-title">// 01 — GitHub 認証</div>
+  <!-- ═══ NOTIFICATION BAR ═══ -->
+  <div class="notif-bar" id="notif-bar">
+    <span>🔔 ブラウザ通知を許可するとタイマー終了を通知できます</span>
+    <button class="btn btn-primary" id="btn-notif-enable"
+      style="padding:0.4rem 0.9rem;font-size:0.72rem;">許可する</button>
+  </div>
 
-    <label>
-      Personal Access Token (repo スコープ必須)
-      <input type="password" id="input-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-    </label>
-    <label>
-      GitHub ユーザー名（Owner）
-      <input type="text" id="input-owner" placeholder="y-osaka0123" />
-    </label>
-    <label>
-      リポジトリ名
-      <input type="text" id="input-repo" placeholder="Pomit" />
-    </label>
+  <!-- ═══════════════════════════════════
+       VIEW: SETTINGS
+  ═══════════════════════════════════ -->
+  <div class="view active" id="view-settings">
 
-    <div class="auth-strip">
-      <div id="auth-badge" class="badge warn">未認証</div>
+    <div class="card">
+      <div class="card-title">// 01 — GitHub 認証</div>
+      <label>
+        Personal Access Token（repo スコープ必須）
+        <input type="password" id="input-token"
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+      </label>
+      <label>
+        GitHub ユーザー名（Owner）
+        <input type="text" id="input-owner" placeholder="y-osaka0123" />
+      </label>
+      <label>
+        リポジトリ名
+        <input type="text" id="input-repo" placeholder="Pomit" />
+      </label>
+      <div class="auth-strip">
+        <div id="auth-badge" class="badge warn">未認証</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="btn-verify">接続確認</button>
+          <button class="btn btn-primary"   id="btn-save">保存</button>
+          <button class="btn btn-danger"    id="btn-clear">クリア</button>
+        </div>
+      </div>
+      <div class="log" id="auth-log">接続確認で GitHub API との疎通を検証します...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">// 02 — タイマー設定</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <label>
+          作業時間（分）
+          <input type="number" id="input-work-min" value="25" min="1" max="60" />
+        </label>
+        <label>
+          休憩時間（分）
+          <input type="number" id="input-break-min" value="5" min="1" max="30" />
+        </label>
+      </div>
+      <label>
+        進捗ファイル保存先パス
+        <input type="text" id="input-filepath"
+          placeholder="pomit-logs/progress.md" />
+      </label>
       <div class="btn-row">
-        <button class="btn btn-secondary" id="btn-verify">接続確認</button>
-        <button class="btn btn-primary"   id="btn-save">保存</button>
-        <button class="btn btn-danger"    id="btn-clear">クリア</button>
+        <button class="btn btn-primary" id="btn-settings-done">
+          設定完了 → 開始画面へ
+        </button>
       </div>
     </div>
-  </div>
 
-  <!-- ② 疎通テストカード -->
-  <div class="card" id="card-test">
-    <div class="card-title">// 02 — commit / push テスト</div>
-    <label>
-      コミットメッセージ
-      <input type="text" id="input-msg" placeholder="test: Pomit疎通確認" />
-    </label>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="btn-commit" disabled>テストコミット実行</button>
+  </div><!-- /view-settings -->
+
+
+  <!-- ═══════════════════════════════════
+       VIEW: START
+  ═══════════════════════════════════ -->
+  <div class="view" id="view-start">
+    <div class="card">
+      <div class="card-title">// 今日は何をする？</div>
+      <label>
+        今日の目標・やること
+        <textarea id="input-task" rows="4"
+          placeholder="例）CloudFrontのZenn記事を書く&#10;ALBとターゲットグループの違いを整理する"></textarea>
+      </label>
+      <button class="btn btn-primary btn-full" id="btn-start-pomodoro">
+        🍅 ポモドーロ開始
+      </button>
     </div>
-    <div class="log" id="log">接続確認後にコミットテストが実行できます...</div>
-  </div>
+  </div><!-- /view-start -->
 
-</div>
 
+  <!-- ═══════════════════════════════════
+       VIEW: TIMER
+  ═══════════════════════════════════ -->
+  <div class="view" id="view-timer">
+
+    <!-- stats -->
+    <div class="stats-row">
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-sessions">0</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val cyan" id="stat-commits">0</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-elapsed">0m</div>
+        <div class="stat-label">Total Work</div>
+      </div>
+    </div>
+
+    <!-- timer card -->
+    <div class="card">
+      <div class="session-header">
+        <div class="session-label" id="session-label">作業セッション</div>
+        <div class="session-count" id="session-count">#1</div>
+      </div>
+
+      <div class="timer-ring-wrap">
+        <div class="ring-container">
+          <svg class="ring-svg" viewBox="0 0 200 200">
+            <circle class="ring-bg" cx="100" cy="100" r="88" />
+            <circle class="ring-progress" id="ring-progress"
+              cx="100" cy="100" r="88"
+              stroke-dasharray="552.92"
+              stroke-dashoffset="0" />
+          </svg>
+          <div class="ring-center">
+            <div class="ring-time" id="ring-time">25:00</div>
+            <div class="ring-mode work" id="ring-mode">WORK</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="btn btn-primary btn-timer-main" id="btn-timer-toggle">
+            ▶ スタート
+          </button>
+          <button class="btn btn-ghost" id="btn-timer-reset">リセット</button>
+          <button class="btn btn-ghost" id="btn-back-to-start"
+            style="font-size:0.7rem;padding:0.5rem 0.8rem;">← 戻る</button>
+        </div>
+      </div>
+
+      <div class="task-strip">
+        <div class="task-strip-label">今日の目標</div>
+        <div id="task-display">—</div>
+      </div>
+    </div>
+
+    <!-- progress panel（セッション完了後に表示） -->
+    <div class="card" id="progress-card" style="display:none;">
+      <div class="card-title" style="color:var(--accent);">
+        // 🍅 セッション完了 — 進捗を記録
+      </div>
+      <label>
+        何を実施しましたか？
+        <textarea id="input-progress" rows="4"
+          placeholder="例）CloudFrontのオリジン設定について整理した&#10;S3との連携パターンを3種類まとめた"></textarea>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-cyan" id="btn-commit-progress">
+          ✓ 完了 → Commit &amp; Push
+        </button>
+        <button class="btn btn-ghost" id="btn-skip-commit">
+          スキップ（休憩へ）
+        </button>
+      </div>
+      <div class="log" id="commit-log">進捗を入力して「完了」を押してください...</div>
+    </div>
+
+    <!-- commit history -->
+    <div class="card" id="history-card" style="display:none;">
+      <div class="card-title">// コミット履歴（今日）</div>
+      <div class="commit-log" id="commit-history"></div>
+    </div>
+
+  </div><!-- /view-timer -->
+
+</div><!-- /wrap -->
 <script src="app.js"></script>
 </body>
 </html>
