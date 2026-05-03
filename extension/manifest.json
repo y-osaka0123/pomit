@@ -1,0 +1,69 @@
+{
+  "manifest_version": 3,
+  "name": "Pomit Guard",
+  "version": "1.0.0",
+  "description": "ポモドーロ作業中のサボりサイトをブロックする Pomit の拡張機能",
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "tabs"
+  ],
+
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.x.com/*",
+    "*://*.twitter.com/*",
+    "*://*.instagram.com/*",
+    "*://*.netflix.com/*",
+    "*://*.nicovideo.jp/*",
+    "*://*.manga1000.com/*",
+    "*://*.rawkuma.com/*",
+    "*://*.mangadex.org/*",
+    "*://*.pixiv.net/*",
+    "*://*.tiktok.com/*",
+    "*://*.reddit.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.x.com/*",
+        "*://*.twitter.com/*",
+        "*://*.instagram.com/*",
+        "*://*.netflix.com/*",
+        "*://*.nicovideo.jp/*",
+        "*://*.manga1000.com/*",
+        "*://*.rawkuma.com/*",
+        "*://*.mangadex.org/*",
+        "*://*.pixiv.net/*",
+        "*://*.tiktok.com/*",
+        "*://*.reddit.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
