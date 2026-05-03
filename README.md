@@ -1,4 +1,4 @@
-# Pomit 🍅
+# pomit 🍅
 
 > **Pomodoro × Commit** — 自己学習の進捗を、ポモドーロと一緒にGitHubへ刻む。
 
@@ -13,8 +13,8 @@
 ### 1. このリポジトリをクローン or ファイルをコピー
 
 ```bash
-git clone https://github.com/y-osaka0123/Pomit.git
-cd Pomit
+git clone https://github.com/y-osaka0123/pomit.git
+cd pomit
 ```
 
 ### 2. GitHub Pages を有効化
@@ -24,7 +24,7 @@ cd Pomit
 3. **Branch**: `main` / `docs` フォルダを選択
 4. `Save`
 
-数分後に `https://y-osaka0123.github.io/Pomit/` でアクセス可能になります。
+数分後に `https://y-osaka0123.github.io/pomit/` でアクセス可能になります。
 
 ### 3. Personal Access Token を発行
 
@@ -36,7 +36,7 @@ cd Pomit
 ### 4. 疎通確認
 
 1. GitHub Pagesの URL を開く
-2. トークン・Owner名（`y-osaka0123`）・リポジトリ名（`Pomit`）を入力
+2. トークン・Owner名（`y-osaka0123`）・リポジトリ名（`pomit`）を入力
 3. `保存` → `接続確認` → `テストコミット実行`
 4. `pomit-test/connection-check.md` が作成されれば成功 ✅
 
@@ -45,18 +45,9 @@ cd Pomit
 ## ファイル構成
 
 ```
-Pomit/
+pomit/
 └── docs/                  # GitHub Pages ルート
     ├── index.html         # UI
     ├── app.js             # GitHub API ロジック
     └── .nojekyll          # Jekyllビルド無効化
 ```
-
----
-
-## ロードマップ
-
-- [x] フェーズ1: GitHub API 疎通確認 + commit/push
-- [ ] フェーズ2: ポモドーロタイマー（25分/5分）
-- [ ] フェーズ3: 今日やること・進捗入力 → 自動コミット
-- [ ] フェーズ4: Chrome拡張（Brave対応）サボり防止
