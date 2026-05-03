@@ -10,6 +10,8 @@ const STORE = {
   filepath: 'pomit_filepath',
   workMin: 'pomit_work_min',
   breakMin: 'pomit_break_min',
+  taskDraft: 'pomit_task_draft',
+  progressDraft: 'pomit_progress_draft',
 };
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 88; // ≈ 552.92
@@ -230,10 +232,11 @@ async function commitProgress(progressText, sessionNum) {
   const now = nowJST();
   const todayStr = new Date().toLocaleDateString('ja-JP');
   const msgShort = `📝 Session #${sessionNum} — ${todayStr}`;
+  const taskText = state.task || inputTask.value.trim() || storageGet(STORE.taskDraft) || '（未入力）';
 
   const content =
     `## Session #${sessionNum} — ${now}\n\n` +
-    `### 今日の目標\n${state.task}\n\n` +
+    `### 今日の目標\n${taskText}\n\n` +
     `### 実施内容\n${progressText}\n\n---\n\n`;
 
   // 既存ファイルのSHA取得（追記のため）
@@ -283,6 +286,14 @@ function loadSaved() {
   if (f) inputFilepath.value = f;
   if (w) inputWorkMin.value = w;
   if (b) inputBreakMin.value = b;
+  const taskDraft = storageGet(STORE.taskDraft);
+  const progressDraft = storageGet(STORE.progressDraft);
+  if (taskDraft) {
+    inputTask.value = taskDraft;
+    state.task = taskDraft;
+    taskDisplay.textContent = taskDraft;
+  }
+  if (progressDraft) inputProgress.value = progressDraft;
   if (t && o && r) {
     setAuthBadge('warn', '保存済み（未検証）');
   }
@@ -368,9 +379,21 @@ btnStartPomodoro.addEventListener('click', () => {
     return;
   }
   state.task = task;
+  storageSet(STORE.taskDraft, task);
   taskDisplay.textContent = task;
   initTimer('work');
   showView('timer');
+});
+
+inputTask.addEventListener('input', () => {
+  storageSet(STORE.taskDraft, inputTask.value.trim());
+});
+
+inputTask.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    btnStartPomodoro.click();
+  }
 });
 
 /* ══════════════════════════════════════════════════
@@ -476,7 +499,7 @@ function onTimerEnd() {
     progressCard.style.display = 'flex';
     progressCard.style.flexDirection = 'column';
     clearLog(commitLog);
-    inputProgress.value = '';
+    inputProgress.value = storageGet(STORE.progressDraft) || '';
     inputProgress.focus();
     btnTimerToggle.textContent = '▶ スタート';
     btnTimerToggle.className = 'btn btn-primary btn-timer-main';
@@ -536,6 +559,8 @@ btnCommitProgress.addEventListener('click', async () => {
     state.commits++;
     addLog(commitLog, `✓ コミット成功: ${result.sha.slice(0, 7)}`, 'ok');
     addLog(commitLog, `  ${result.msg}`, 'acc');
+    storageRemove(STORE.progressDraft);
+    inputProgress.value = '';
 
     // 履歴に追加
     state.history.unshift({ sha: result.sha, msg: result.msg, url: result.url });
@@ -562,9 +587,22 @@ btnCommitProgress.addEventListener('click', async () => {
 });
 
 btnSkipCommit.addEventListener('click', () => {
+  storageRemove(STORE.progressDraft);
+  inputProgress.value = '';
   progressCard.style.display = 'none';
   initTimer('break');
   startTimer();
+});
+
+inputProgress.addEventListener('input', () => {
+  storageSet(STORE.progressDraft, inputProgress.value.trim());
+});
+
+inputProgress.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    btnCommitProgress.click();
+  }
 });
 
 function renderHistory() {

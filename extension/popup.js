@@ -17,6 +17,7 @@ const btnBreak     = $('btn-break');
 const btnStop      = $('btn-stop');
 const inpWork      = $('inp-work');
 const inpBreak     = $('inp-break');
+const inpDetect    = $('inp-detect');
 const modeWarn     = $('mode-warn');
 const modeRedirect = $('mode-redirect');
 
@@ -58,11 +59,18 @@ modeRedirect.addEventListener('click', () => {
   chrome.runtime.sendMessage({ type: 'SET_BLOCK_MODE', blockMode: 'redirect' }, applyState);
 });
 
+inpDetect.addEventListener('change', () => {
+  const detectSec = normalizeDetectSec(inpDetect.value);
+  inpDetect.value = detectSec;
+  chrome.runtime.sendMessage({ type: 'SET_DETECT_SEC', detectSec }, applyState);
+});
+
 /* ── 設定値を storage から復元 ── */
 chrome.storage.local.get('pomitState', ({ pomitState }) => {
   if (!pomitState) return;
   if (pomitState.workMin)  inpWork.value  = pomitState.workMin;
   if (pomitState.breakMin) inpBreak.value = pomitState.breakMin;
+  if (pomitState.detectSec) inpDetect.value = pomitState.detectSec;
 });
 
 /* ══════════════════════════════════════════════════
@@ -84,6 +92,7 @@ function applyState(st) {
   // block mode toggle
   modeWarn.classList.toggle('active',     st.blockMode === 'warn');
   modeRedirect.classList.toggle('active', st.blockMode === 'redirect');
+  inpDetect.value = normalizeDetectSec(st.detectSec);
 
   // buttons
   if (st.phase === 'idle') {
@@ -128,4 +137,10 @@ function fmtSec(sec) {
   const m = Math.floor(sec / 60).toString().padStart(2, '0');
   const s = (sec % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
+}
+
+function normalizeDetectSec(sec) {
+  const parsed = Number.parseInt(sec, 10);
+  if (!Number.isFinite(parsed)) return 10;
+  return Math.min(3600, Math.max(5, parsed));
 }

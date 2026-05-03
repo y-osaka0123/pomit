@@ -17,10 +17,6 @@
     "*://*.twitter.com/*",
     "*://*.instagram.com/*",
     "*://*.netflix.com/*",
-    "*://*.nicovideo.jp/*",
-    "*://*.manga1000.com/*",
-    "*://*.rawkuma.com/*",
-    "*://*.mangadex.org/*",
     "*://*.pixiv.net/*",
     "*://*.tiktok.com/*",
     "*://*.reddit.com/*"
@@ -38,16 +34,11 @@
         "*://*.twitter.com/*",
         "*://*.instagram.com/*",
         "*://*.netflix.com/*",
-        "*://*.nicovideo.jp/*",
-        "*://*.manga1000.com/*",
-        "*://*.rawkuma.com/*",
-        "*://*.mangadex.org/*",
         "*://*.pixiv.net/*",
         "*://*.tiktok.com/*",
         "*://*.reddit.com/*"
       ],
       "js": ["content.js"],
-      "css": ["content.css"],
       "run_at": "document_start"
     }
   ],

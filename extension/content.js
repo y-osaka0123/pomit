@@ -1,12 +1,27 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════
-   Pomit Guard — Content Script
+   pomit Guard — Content Script
    サボりサイトを検知してオーバーレイを表示する
 ══════════════════════════════════════════════════ */
 
-let overlayEl   = null;
+/* content.css の代わりにJSでスタイルを注入
+   （manifest の css 指定を不要にするため） */
+(function injectGlobalStyle() {
+  const style = document.createElement('style');
+  style.id = '__pomit_global_style__';
+  style.textContent = `
+    body:has(#__pomit_overlay__) {
+      overflow: hidden !important;
+    }
+  `;
+  (document.head || document.documentElement).appendChild(style);
+})();
+
+let overlayEl = null;
 let currentPhase = 'idle';
+let currentDetectSec = 10;
+let detectionTimerId = null;
 
 /* ── 起動時に状態を取得 ── */
 chrome.runtime.sendMessage({ type: 'GET_STATE' }, (st) => {
@@ -27,15 +42,38 @@ chrome.runtime.onMessage.addListener((msg) => {
 /* ── 状態に応じてオーバーレイ制御 ── */
 function handleStateChange(st) {
   currentPhase = st.phase;
+  currentDetectSec = normalizeDetectSec(st.detectSec);
 
   if (st.phase === 'work') {
-    // 作業中 → サボり検知
-    chrome.runtime.sendMessage({ type: 'SABORI_DETECTED' });
-    showOverlay(st);
+    // 作業中 → 設定秒数だけ滞在したらサボり検知
+    scheduleDetection(st);
   } else {
     // idle / break → オーバーレイ除去
+    clearDetectionTimer();
     removeOverlay();
   }
+}
+
+function scheduleDetection(st) {
+  clearDetectionTimer();
+  if (overlayEl) return;
+
+  detectionTimerId = setTimeout(() => {
+    if (currentPhase !== 'work') return;
+    chrome.runtime.sendMessage({ type: 'GET_STATE' }, (latest) => {
+      if (chrome.runtime.lastError) return;
+      if (!latest || latest.phase !== 'work') return;
+      currentDetectSec = normalizeDetectSec(latest.detectSec);
+      chrome.runtime.sendMessage({ type: 'SABORI_DETECTED' });
+      showOverlay(latest);
+    });
+  }, currentDetectSec * 1000);
+}
+
+function clearDetectionTimer() {
+  if (!detectionTimerId) return;
+  clearTimeout(detectionTimerId);
+  detectionTimerId = null;
 }
 
 /* ══════════════════════════════════════════════════
@@ -118,7 +156,7 @@ function showOverlay(st) {
   box.className = 'overlay';
 
   const remaining = calcRemaining(st);
-  const sabori    = st.saboriCount + 1;
+  const sabori = st.saboriCount + 1;
 
   box.innerHTML = `
     <div class="box">
@@ -163,15 +201,11 @@ function removeOverlay(ignored = false) {
     overlayEl = null;
   }
   if (ignored) {
-    // 無視した場合は10秒後に再表示
-    setTimeout(() => {
-      if (currentPhase === 'work') {
-        chrome.runtime.sendMessage({ type: 'GET_STATE' }, (st) => {
-          if (chrome.runtime.lastError) return;
-          if (st && st.phase === 'work') showOverlay(st);
-        });
-      }
-    }, 10_000);
+    // 無視した場合も設定秒数だけ滞在したら再検知
+    chrome.runtime.sendMessage({ type: 'GET_STATE' }, (st) => {
+      if (chrome.runtime.lastError) return;
+      if (st && st.phase === 'work') scheduleDetection(st);
+    });
   }
 }
 
@@ -202,4 +236,10 @@ function fmtSec(sec) {
   const m = Math.floor(sec / 60).toString().padStart(2, '0');
   const s = (sec % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
+}
+
+function normalizeDetectSec(sec) {
+  const parsed = Number.parseInt(sec, 10);
+  if (!Number.isFinite(parsed)) return 10;
+  return Math.min(3600, Math.max(5, parsed));
 }

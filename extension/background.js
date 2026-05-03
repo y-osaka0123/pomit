@@ -11,6 +11,7 @@ const DEFAULT_STATE = {
   startedAt: null,      // timestamp (ms)
   workMin: 25,
   breakMin: 5,
+  detectSec: 10,
   blockMode: 'warn',    // 'warn' | 'redirect'
   sessions: 0,
   saboriCount: 0,
@@ -47,6 +48,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case 'SET_BLOCK_MODE':
       setBlockMode(msg.blockMode).then(sendResponse);
+      return true;
+
+    case 'SET_DETECT_SEC':
+      setDetectSec(msg.detectSec).then(sendResponse);
       return true;
 
     case 'SABORI_DETECTED':
@@ -94,7 +99,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 ══════════════════════════════════════════════════ */
 async function getState() {
   const { pomitState } = await chrome.storage.local.get('pomitState');
-  return pomitState || { ...DEFAULT_STATE };
+  return { ...DEFAULT_STATE, ...(pomitState || {}) };
 }
 
 async function updateState(patch) {
@@ -140,10 +145,30 @@ async function setBlockMode(mode) {
   return next;
 }
 
+async function setDetectSec(sec) {
+  const detectSec = normalizeDetectSec(sec);
+  const next = await updateState({ detectSec });
+  broadcastState();
+  return next;
+}
+
 async function recordSabori() {
   const st   = await getState();
   const next = await updateState({ saboriCount: st.saboriCount + 1 });
+  chrome.notifications.create(`sabori_${Date.now()}`, {
+    type: 'basic',
+    iconUrl: 'icons/icon48.png',
+    title: '⚠ サボりサイトを検知しました',
+    message: `${next.detectSec}秒以上サボりサイトに滞在しています。作業に戻りましょう。`,
+    priority: 2,
+  });
   return next;
+}
+
+function normalizeDetectSec(sec) {
+  const parsed = Number.parseInt(sec, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_STATE.detectSec;
+  return Math.min(3600, Math.max(5, parsed));
 }
 
 /* 全タブに状態変化を broadcast */
