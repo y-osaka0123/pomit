@@ -6,57 +6,37 @@
 
 const $ = id => document.getElementById(id);
 
-const phaseBadge   = $('phase-badge');
-const timerVal     = $('timer-val');
-const timerLabel   = $('timer-label');
-const statSessions = $('stat-sessions');
-const statSabori   = $('stat-sabori');
-const statPhase    = $('stat-phase');
-const btnWork      = $('btn-work');
-const btnBreak     = $('btn-break');
-const btnStop      = $('btn-stop');
-const inpWork      = $('inp-work');
-const inpBreak     = $('inp-break');
-const inpDetect    = $('inp-detect');
-const modeWarn     = $('mode-warn');
-const modeRedirect = $('mode-redirect');
+const statusBadge = $('status-badge');
+const statusText = $('status-text');
+const statSabori = $('stat-sabori');
+const inpDetect = $('inp-detect');
+const btnToggle = $('btn-toggle');
+const btnReset = $('btn-reset');
+const modeNotify = $('mode-notify');
+const modeBlock = $('mode-block');
 
-let currentState = null;
-let tickInterval = null;
-
-/* ── 初期ロード ── */
 chrome.runtime.sendMessage({ type: 'GET_STATE' }, (st) => {
   if (chrome.runtime.lastError) return;
   applyState(st);
 });
 
-/* ── ボタンイベント ── */
-btnWork.addEventListener('click', () => {
-  chrome.runtime.sendMessage({
-    type: 'START_WORK',
-    workMin:  parseInt(inpWork.value,  10),
-    breakMin: parseInt(inpBreak.value, 10),
-  }, applyState);
+btnToggle.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ type: 'GET_STATE' }, (st) => {
+    if (chrome.runtime.lastError || !st) return;
+    chrome.runtime.sendMessage({ type: 'SET_ENABLED', enabled: !st.enabled }, applyState);
+  });
 });
 
-btnBreak.addEventListener('click', () => {
-  chrome.runtime.sendMessage({
-    type: 'START_BREAK',
-    workMin:  parseInt(inpWork.value,  10),
-    breakMin: parseInt(inpBreak.value, 10),
-  }, applyState);
+btnReset.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ type: 'RESET_SABORI_COUNT' }, applyState);
 });
 
-btnStop.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'STOP' }, applyState);
+modeNotify.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ type: 'SET_MODE', mode: 'notify' }, applyState);
 });
 
-modeWarn.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'SET_BLOCK_MODE', blockMode: 'warn' }, applyState);
-});
-
-modeRedirect.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'SET_BLOCK_MODE', blockMode: 'redirect' }, applyState);
+modeBlock.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ type: 'SET_MODE', mode: 'block' }, applyState);
 });
 
 inpDetect.addEventListener('change', () => {
@@ -65,78 +45,23 @@ inpDetect.addEventListener('change', () => {
   chrome.runtime.sendMessage({ type: 'SET_DETECT_SEC', detectSec }, applyState);
 });
 
-/* ── 設定値を storage から復元 ── */
-chrome.storage.local.get('pomitState', ({ pomitState }) => {
-  if (!pomitState) return;
-  if (pomitState.workMin)  inpWork.value  = pomitState.workMin;
-  if (pomitState.breakMin) inpBreak.value = pomitState.breakMin;
-  if (pomitState.detectSec) inpDetect.value = pomitState.detectSec;
-});
-
-/* ══════════════════════════════════════════════════
-   UI UPDATE
-══════════════════════════════════════════════════ */
 function applyState(st) {
   if (!st) return;
-  currentState = st;
 
-  // phase badge
-  phaseBadge.className = `phase-badge ${st.phase}`;
-  phaseBadge.textContent = phaseLabel(st.phase);
+  statusBadge.className = `status-badge ${st.enabled ? 'on' : 'off'}`;
+  statusBadge.textContent = st.enabled ? 'ON' : 'OFF';
+  statusText.textContent = st.enabled
+    ? (st.mode === 'block' ? 'アクセスブロック中' : '滞在時間を監視中')
+    : '監視停止中';
 
-  // stats
-  statSessions.textContent = st.sessions;
-  statSabori.textContent   = st.saboriCount;
-  statPhase.textContent    = phaseLabel(st.phase);
-
-  // block mode toggle
-  modeWarn.classList.toggle('active',     st.blockMode === 'warn');
-  modeRedirect.classList.toggle('active', st.blockMode === 'redirect');
+  statSabori.textContent = st.saboriCount || 0;
   inpDetect.value = normalizeDetectSec(st.detectSec);
+  inpDetect.disabled = st.mode === 'block';
+  btnToggle.textContent = st.enabled ? '■ OFFにする' : '● ONにする';
+  btnToggle.className = `btn ${st.enabled ? 'btn-danger' : 'btn-primary'}`;
 
-  // buttons
-  if (st.phase === 'idle') {
-    btnWork.style.display  = '';
-    btnBreak.style.display = 'none';
-    btnStop.style.display  = 'none';
-    timerVal.textContent   = '--:--';
-    timerLabel.textContent = '待機中';
-  } else if (st.phase === 'work') {
-    btnWork.style.display  = 'none';
-    btnBreak.style.display = '';
-    btnStop.style.display  = '';
-    timerLabel.textContent = '作業残り時間';
-  } else if (st.phase === 'break') {
-    btnWork.style.display  = 'none';
-    btnBreak.style.display = 'none';
-    btnStop.style.display  = '';
-    timerLabel.textContent = '休憩残り時間';
-  }
-
-  // countdown
-  clearInterval(tickInterval);
-  if (st.phase !== 'idle' && st.startedAt) {
-    tickCountdown(st);
-    tickInterval = setInterval(() => tickCountdown(st), 1000);
-  }
-}
-
-function tickCountdown(st) {
-  const totalSec = (st.phase === 'work' ? st.workMin : st.breakMin) * 60;
-  const elapsed  = Math.floor((Date.now() - st.startedAt) / 1000);
-  const rem      = Math.max(0, totalSec - elapsed);
-  timerVal.textContent = fmtSec(rem);
-  if (rem === 0) clearInterval(tickInterval);
-}
-
-function phaseLabel(phase) {
-  return { idle: 'IDLE', work: 'WORK', break: 'BREAK' }[phase] || 'IDLE';
-}
-
-function fmtSec(sec) {
-  const m = Math.floor(sec / 60).toString().padStart(2, '0');
-  const s = (sec % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
+  modeNotify.classList.toggle('active', st.mode !== 'block');
+  modeBlock.classList.toggle('active', st.mode === 'block');
 }
 
 function normalizeDetectSec(sec) {

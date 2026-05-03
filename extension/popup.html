@@ -4,236 +4,217 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pomit Guard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:      #0d0f12;
+      --bg: #0d0f12;
       --surface: #161a20;
-      --border:  #252a33;
-      --accent:  #e8ff57;
+      --border: #252a33;
+      --accent: #e8ff57;
       --accent2: #57ffe8;
-      --text:    #e4e8ef;
-      --muted:   #5a6070;
-      --danger:  #ff5f57;
-      --success: #57ff8a;
-      --mono:    'Space Mono', monospace;
-      --sans:    'Noto Sans JP', sans-serif;
+      --text: #e4e8ef;
+      --muted: #7a8190;
+      --danger: #ff5f57;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg); color: var(--text);
+      width: 300px;
+      padding: 1.2rem;
+      background: var(--bg);
+      color: var(--text);
       font-family: var(--sans);
-      width: 300px; padding: 1.25rem;
-      display: flex; flex-direction: column; gap: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
-    /* ── header ── */
     .header {
-      display: flex; align-items: center;
+      display: flex;
+      align-items: center;
       justify-content: space-between;
+      gap: 0.75rem;
     }
+
     .logo {
-      font-family: var(--mono); font-size: 1.2rem; font-weight: 700;
-      color: var(--accent); letter-spacing: -0.04em;
+      font-family: var(--mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
     }
+
     .logo span { color: var(--accent2); }
-    .logo-sub {
-      font-family: var(--mono); font-size: 0.58rem;
-      color: var(--muted); letter-spacing: 0.1em;
+
+    .sub {
+      margin-top: 0.12rem;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
     }
 
-    /* ── phase badge ── */
-    .phase-badge {
-      display: flex; align-items: center; gap: 0.4rem;
-      font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
-      padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid;
-      letter-spacing: 0.06em; text-transform: uppercase;
-    }
-    .phase-badge::before { content: '●'; font-size: 0.45rem; }
-    .phase-badge.idle  { color: var(--muted);   border-color: var(--border); }
-    .phase-badge.work  { color: var(--accent);  border-color: var(--accent);  background: rgba(232,255,87,0.07); }
-    .phase-badge.break { color: var(--accent2); border-color: var(--accent2); background: rgba(87,255,232,0.07); }
-
-    /* ── timer display ── */
-    .timer-display {
-      text-align: center; padding: 0.75rem 0;
-    }
-    .timer-val {
-      font-family: var(--mono); font-size: 2.2rem; font-weight: 700;
-      color: var(--text); letter-spacing: -0.04em; line-height: 1;
-    }
-    .timer-label {
-      font-family: var(--mono); font-size: 0.6rem;
-      color: var(--muted); letter-spacing: 0.1em;
-      text-transform: uppercase; margin-top: 0.25rem;
+    .status-badge {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      border: 1px solid;
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
     }
 
-    /* ── stats ── */
-    .stats {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
-    }
-    .stat {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 4px; padding: 0.5rem; text-align: center;
-    }
-    .stat-val {
-      font-family: var(--mono); font-size: 1.1rem; font-weight: 700;
-      color: var(--accent); line-height: 1;
-    }
-    .stat-val.danger { color: var(--danger); }
-    .stat-val.cyan   { color: var(--accent2); }
-    .stat-label {
-      font-family: var(--mono); font-size: 0.55rem;
-      color: var(--muted); text-transform: uppercase;
-      letter-spacing: 0.08em; margin-top: 0.2rem;
+    .status-badge.on {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(232, 255, 87, 0.07);
     }
 
-    /* ── divider ── */
+    .status-badge.off {
+      color: var(--muted);
+      border-color: var(--border);
+    }
+
+    .status-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.4rem 0.75rem;
+      align-items: center;
+    }
+
+    .label {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .value {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: right;
+    }
+
     .divider { height: 1px; background: var(--border); }
 
-    /* ── buttons ── */
     .btn {
-      font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.05em; border: none; border-radius: 4px;
-      padding: 0.65rem; cursor: pointer; width: 100%;
-      transition: opacity 0.15s;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+      padding: 0.7rem;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
     }
-    .btn:hover { opacity: 0.82; }
-    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .btn-primary  { background: var(--accent);  color: #0d0f12; }
-    .btn-cyan     { background: var(--accent2); color: #0d0f12; }
-    .btn-ghost {
-      background: transparent; color: var(--muted);
-      border: 1px solid var(--border);
-    }
-    .btn-danger {
-      background: transparent; color: var(--danger);
-      border: 1px solid var(--danger);
-    }
-    .btn-row { display: flex; gap: 0.5rem; }
-    .btn-row .btn { flex: 1; }
 
-    /* ── settings row ── */
-    .settings-row {
-      display: flex; flex-direction: column; gap: 0.5rem;
+    .btn-primary { background: var(--accent); color: #0d0f12; }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    .mode-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
     }
+
+    .mode-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.55rem 0.35rem;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0d0f12;
+    }
+
     .settings-row label {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 0.72rem; color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.72rem;
     }
-    .settings-row input[type="number"] {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 3px; color: var(--text);
-      font-family: var(--mono); font-size: 0.8rem;
-      padding: 0.2rem 0.4rem; width: 54px; text-align: right;
+
+    input[type="number"] {
+      width: 70px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.32rem 0.45rem;
+      text-align: right;
       outline: none;
     }
-    .settings-row input[type="number"]:focus { border-color: var(--accent); }
 
-    /* ── block mode toggle ── */
-    .block-mode-row {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      font-size: 0.72rem; color: var(--muted);
-    }
-    .toggle-wrap {
-      display: flex; gap: 0.3rem;
-    }
-    .toggle-btn {
-      font-family: var(--mono); font-size: 0.62rem; font-weight: 700;
-      border: 1px solid var(--border); background: transparent;
-      color: var(--muted); border-radius: 3px;
-      padding: 0.2rem 0.5rem; cursor: pointer;
-      transition: all 0.15s;
-    }
-    .toggle-btn.active { background: var(--accent); color: #0d0f12; border-color: var(--accent); }
+    input[type="number"]:focus { border-color: var(--accent); }
+    input[type="number"]:disabled { opacity: 0.45; }
 
-    /* ── pomit link ── */
     .pomit-link {
-      font-family: var(--mono); font-size: 0.62rem;
-      color: var(--accent2); text-decoration: none;
-      text-align: center; letter-spacing: 0.06em;
-      opacity: 0.7;
+      color: var(--accent2);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      text-align: center;
+      text-decoration: none;
+      opacity: 0.75;
     }
+
     .pomit-link:hover { opacity: 1; }
   </style>
 </head>
 <body>
-
-  <!-- header -->
   <div class="header">
     <div>
       <div class="logo">Po<span>mit</span> Guard</div>
-      <div class="logo-sub">SABORI BLOCKER</div>
+      <div class="sub">SABORI GUARD</div>
     </div>
-    <div class="phase-badge idle" id="phase-badge">IDLE</div>
+    <div class="status-badge off" id="status-badge">OFF</div>
   </div>
 
-  <!-- timer -->
-  <div class="timer-display">
-    <div class="timer-val" id="timer-val">--:--</div>
-    <div class="timer-label" id="timer-label">待機中</div>
+  <div class="status-panel">
+    <div class="label">状態</div>
+    <div class="value" id="status-text">監視停止中</div>
+    <div class="label">検知回数</div>
+    <div class="value" id="stat-sabori">0</div>
   </div>
 
-  <!-- stats -->
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-val" id="stat-sessions">0</div>
-      <div class="stat-label">Sessions</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val danger" id="stat-sabori">0</div>
-      <div class="stat-label">Sabori</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val cyan" id="stat-phase">—</div>
-      <div class="stat-label">Phase</div>
-    </div>
-  </div>
+  <button class="btn btn-primary" id="btn-toggle">● ONにする</button>
 
   <div class="divider"></div>
 
-  <!-- timer controls -->
-  <div class="btn-row" id="ctrl-row">
-    <button class="btn btn-primary" id="btn-work">🍅 作業開始</button>
-    <button class="btn btn-cyan"    id="btn-break" style="display:none;">☕ 休憩開始</button>
-    <button class="btn btn-danger"  id="btn-stop"  style="display:none;">■ 停止</button>
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-notify">通知</button>
+    <button class="mode-btn" id="mode-block">ブロック</button>
   </div>
 
-  <div class="divider"></div>
-
-  <!-- settings -->
   <div class="settings-row">
     <label>
-      作業時間（分）
-      <input type="number" id="inp-work" value="25" min="1" max="60" />
-    </label>
-    <label>
-      休憩時間（分）
-      <input type="number" id="inp-break" value="5" min="1" max="30" />
-    </label>
-    <label>
-      検知まで（秒）
-      <input type="number" id="inp-detect" value="5" min="1" max="1800" />
+      通知まで（秒）
+      <input type="number" id="inp-detect" value="10" min="5" max="3600" />
     </label>
   </div>
 
-  <!-- block mode -->
-  <div class="block-mode-row">
-    <span>ブロックモード</span>
-    <div class="toggle-wrap">
-      <button class="toggle-btn active" id="mode-warn">警告</button>
-      <button class="toggle-btn"        id="mode-redirect">強制</button>
-    </div>
-  </div>
+  <button class="btn btn-ghost" id="btn-reset">検知回数をリセット</button>
 
   <div class="divider"></div>
 
-  <a class="pomit-link" id="pomit-link"
-     href="https://y-osaka0123.github.io/Pomit/"
-     target="_blank">↗ Pomit を開く</a>
+  <a class="pomit-link" href="https://y-osaka0123.github.io/Pomit/" target="_blank">↗ Pomit を開く</a>
 
+  <script src="popup.js"></script>
 </body>
-<script src="popup.js"></script>
 </html>

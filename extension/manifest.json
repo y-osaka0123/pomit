@@ -2,11 +2,10 @@
   "manifest_version": 3,
   "name": "Pomit Guard",
   "version": "1.0.0",
-  "description": "ポモドーロ作業中のサボりサイトをブロックする Pomit の拡張機能",
+  "description": "サボりサイトの滞在通知とアクセスブロックを行う Pomit の拡張機能",
 
   "permissions": [
     "storage",
-    "alarms",
     "notifications",
     "tabs"
   ],

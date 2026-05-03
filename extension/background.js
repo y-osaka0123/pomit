@@ -2,101 +2,52 @@
 
 /* ══════════════════════════════════════════════════
    Pomit Guard — Background Service Worker
-   タイマー状態を chrome.storage で管理し、
-   content.js / popup.js に状態を配信する
+   サボり検知のON/OFF、検知モード、検知回数を管理する
 ══════════════════════════════════════════════════ */
 
 const DEFAULT_STATE = {
-  phase: 'idle',        // 'idle' | 'work' | 'break'
-  startedAt: null,      // timestamp (ms)
-  workMin: 25,
-  breakMin: 5,
+  enabled: false,
+  mode: 'notify',      // 'notify' | 'block'
   detectSec: 10,
-  blockMode: 'warn',    // 'warn' | 'redirect'
-  sessions: 0,
   saboriCount: 0,
 };
 
-/* ── 初期化 ── */
 chrome.runtime.onInstalled.addListener(async () => {
   const existing = await chrome.storage.local.get('pomitState');
-  if (!existing.pomitState) {
-    await chrome.storage.local.set({ pomitState: { ...DEFAULT_STATE } });
-  }
+  await chrome.storage.local.set({
+    pomitState: { ...DEFAULT_STATE, ...(existing.pomitState || {}) },
+  });
   console.log('[Pomit Guard] installed / updated');
 });
 
-/* ── メッセージハンドラ ── */
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.type) {
-
     case 'GET_STATE':
       getState().then(sendResponse);
-      return true; // async
-
-    case 'START_WORK':
-      startPhase('work', msg.workMin, msg.breakMin).then(sendResponse);
       return true;
 
-    case 'START_BREAK':
-      startPhase('break', msg.workMin, msg.breakMin).then(sendResponse);
+    case 'SET_ENABLED':
+      setEnabled(msg.enabled).then(sendResponse);
       return true;
 
-    case 'STOP':
-      stopAll().then(sendResponse);
-      return true;
-
-    case 'SET_BLOCK_MODE':
-      setBlockMode(msg.blockMode).then(sendResponse);
+    case 'SET_MODE':
+      setMode(msg.mode).then(sendResponse);
       return true;
 
     case 'SET_DETECT_SEC':
       setDetectSec(msg.detectSec).then(sendResponse);
       return true;
 
+    case 'RESET_SABORI_COUNT':
+      resetSaboriCount().then(sendResponse);
+      return true;
+
     case 'SABORI_DETECTED':
-      recordSabori().then(sendResponse);
+      recordSabori(msg.reason).then(sendResponse);
       return true;
   }
 });
 
-/* ── アラームハンドラ ── */
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  const st = await getState();
-
-  if (alarm.name === 'pomit_work_end') {
-    // 作業終了 → 通知
-    chrome.notifications.create('work_end', {
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
-      title: '🍅 作業セッション完了！',
-      message: 'お疲れ様です。Pomit で進捗を記録してください。',
-      priority: 2,
-    });
-    await updateState({
-      phase: 'idle',
-      sessions: st.sessions + 1,
-    });
-    broadcastState();
-  }
-
-  if (alarm.name === 'pomit_break_end') {
-    // 休憩終了 → 通知
-    chrome.notifications.create('break_end', {
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
-      title: '☕ 休憩終了！',
-      message: '次のセッションを開始しましょう。',
-      priority: 2,
-    });
-    await updateState({ phase: 'idle' });
-    broadcastState();
-  }
-});
-
-/* ══════════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════════ */
 async function getState() {
   const { pomitState } = await chrome.storage.local.get('pomitState');
   return { ...DEFAULT_STATE, ...(pomitState || {}) };
@@ -104,64 +55,50 @@ async function getState() {
 
 async function updateState(patch) {
   const current = await getState();
-  const next    = { ...current, ...patch };
+  const next = { ...current, ...patch };
   await chrome.storage.local.set({ pomitState: next });
   return next;
 }
 
-async function startPhase(phase, workMin, breakMin) {
-  // 既存アラームをクリア
-  await chrome.alarms.clearAll();
-
-  const mins = phase === 'work'
-    ? (workMin  || 25)
-    : (breakMin || 5);
-
-  chrome.alarms.create(`pomit_${phase}_end`, {
-    delayInMinutes: Number(mins),
-  });
-
-  const next = await updateState({
-    phase,
-    startedAt: Date.now(),
-    workMin:   workMin  || 25,
-    breakMin:  breakMin || 5,
-  });
-
+async function setEnabled(enabled) {
+  const next = await updateState({ enabled: Boolean(enabled) });
   broadcastState();
   return next;
 }
 
-async function stopAll() {
-  await chrome.alarms.clearAll();
-  const next = await updateState({ phase: 'idle', startedAt: null });
-  broadcastState();
-  return next;
-}
-
-async function setBlockMode(mode) {
-  const next = await updateState({ blockMode: mode });
+async function setMode(mode) {
+  const next = await updateState({ mode: mode === 'block' ? 'block' : 'notify' });
   broadcastState();
   return next;
 }
 
 async function setDetectSec(sec) {
-  const detectSec = normalizeDetectSec(sec);
-  const next = await updateState({ detectSec });
+  const next = await updateState({ detectSec: normalizeDetectSec(sec) });
   broadcastState();
   return next;
 }
 
-async function recordSabori() {
-  const st   = await getState();
+async function resetSaboriCount() {
+  const next = await updateState({ saboriCount: 0 });
+  broadcastState();
+  return next;
+}
+
+async function recordSabori(reason = 'notify') {
+  const st = await getState();
   const next = await updateState({ saboriCount: st.saboriCount + 1 });
+
   chrome.notifications.create(`sabori_${Date.now()}`, {
     type: 'basic',
     iconUrl: 'icons/icon48.png',
-    title: '⚠ サボりサイトを検知しました',
-    message: `${next.detectSec}秒以上サボりサイトに滞在しています。作業に戻りましょう。`,
+    title: reason === 'block' ? '⛔ サボりサイトをブロックしました' : '⚠ サボりサイトを検知しました',
+    message: reason === 'block'
+      ? 'Pomit Guard がONのため、このサイトへのアクセスをブロックしています。'
+      : `${next.detectSec}秒以上サボりサイトに滞在しています。作業に戻りましょう。`,
     priority: 2,
   });
+
+  broadcastState();
   return next;
 }
 
@@ -171,12 +108,10 @@ function normalizeDetectSec(sec) {
   return Math.min(3600, Math.max(5, parsed));
 }
 
-/* 全タブに状態変化を broadcast */
 function broadcastState() {
   chrome.tabs.query({}, (tabs) => {
     tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, { type: 'STATE_UPDATED' })
-        .catch(() => {}); // コンテントスクリプト未挿入タブは無視
+      chrome.tabs.sendMessage(tab.id, { type: 'STATE_UPDATED' }).catch(() => {});
     });
   });
 }
