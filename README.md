@@ -19,6 +19,12 @@ cd pomit
 
 https://y-osaka0123.github.io/pomit/
 
+## 🚀 Try pomit
+
+👉 **[pomit を開く](https://y-osaka0123.github.io/pomit/)** （Ctrl + クリック または 中クリックで新しいタブで開けます）
+
+🌐 [pomit](https://y-osaka0123.github.io/pomit/) ↗
+
 ### 3. Personal Access Token を発行
 
 1. GitHub → `Settings` → `Developer settings` → `Personal access tokens` → `Tokens (classic)`
