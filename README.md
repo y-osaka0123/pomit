@@ -17,14 +17,7 @@ git clone https://github.com/y-osaka0123/pomit.git
 cd pomit
 ```
 
-### 2. GitHub Pages を有効化
-
-1. リポジトリの `Settings` → `Pages`
-2. **Source**: `Deploy from a branch`
-3. **Branch**: `main` / `docs` フォルダを選択
-4. `Save`
-
-数分後に `https://y-osaka0123.github.io/pomit/` でアクセス可能になります。
+https://y-osaka0123.github.io/pomit/
 
 ### 3. Personal Access Token を発行
 
